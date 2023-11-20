@@ -32,8 +32,11 @@ type FooterData struct {
 }
 
 type SiteConfig struct {
-	Name   string
-	Footer FooterData
+	Name        string
+	Username    string
+	Description string
+	ProfilePic  string
+	Footer      FooterData
 }
 
 type MarkdownFile struct {
@@ -66,11 +69,14 @@ func (f FrontmatterList) Less(i, j int) bool { return f[i].SortDate.After(f[j].S
 var blog_name string
 var footer string
 var blogposts_data FrontmatterList
+var projects_data FrontmatterList
 
 // Constants
 const SiteBasePath = "site/"
 const SiteBlogPath = "site/blog/"
 const BlogPathForLinks = "/site/blog/"
+const SiteProjectPath = "site/projects/"
+const ProjectPathForLinks = "/site/projects/"
 const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const HtmlTemplate = `<!DOCTYPE html>
@@ -80,18 +86,18 @@ const HtmlTemplate = `<!DOCTYPE html>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
 </head>
 <body>
-<div id="header">
-<h1>%s</h1>
-</div>
-<div id="content">
-%s
-</div>
-<div id="footer">
-%s
-</div>
-<script>
-  hljs.initHighlightingOnLoad();
-</script>
+	<div id="header">
+		<h1>%s</h1>
+	</div>
+	<div id="content">
+		%s
+	</div>
+	<div id="footer">
+		%s
+	</div>
+	<script>
+		hljs.initHighlightingOnLoad();
+	</script>
 </body>
 `
 const HtmlBlogpostTemplate = `<a href="%s" class="index-post-title">%s</a>
@@ -191,6 +197,8 @@ func md_to_html(md_file MarkdownFile, p_type PostType) string {
 
 	if p_type == BlogPost {
 		blogposts_data = append(blogposts_data, md_frontmatter)
+	} else if p_type == ProjectPost {
+		projects_data = append(projects_data, md_frontmatter)
 	}
 
 	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, blog_name, markdown.Render(doc, renderer), footer)
@@ -219,6 +227,23 @@ func generate_blog_homepage() {
 		html_data += blogpost_html
 	}
 	err := os.WriteFile("site/blog.html", []byte(fmt.Sprintf(HtmlTemplate, "My Homepage", blog_name, html_data, footer)), 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+		return
+	}
+}
+
+func generate_projects_homepage() {
+	sort.Sort(projects_data)
+	html_data := ""
+	for x, project := range projects_data {
+		blogpost_html := fmt.Sprintf(HtmlBlogpostTemplate, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description)
+		if x < len(projects_data)-1 {
+			blogpost_html += "<hr>"
+		}
+		html_data += blogpost_html
+	}
+	err := os.WriteFile("index.html", []byte(fmt.Sprintf(HtmlTemplate, "My Homepage", blog_name, html_data, footer)), 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
 		return
@@ -259,5 +284,10 @@ func main() {
 		blogpost_pages := load_blog_pages("posts/blog", SiteBlogPath, BlogPost)
 		publish_folder(blogpost_pages)
 		generate_blog_homepage()
+	}
+	{
+		projects_pages := load_blog_pages("posts/projects", SiteProjectPath, ProjectPost)
+		publish_folder(projects_pages)
+		generate_projects_homepage()
 	}
 }

@@ -1,5 +1,8 @@
 # Your preferred name/username (to be displayed in the blog header)
-name = "German Sheperd"
+name = "Shreyas Donti"
+username = "stelleron"
+description = "I'm a CS student @ UMass Amherst! Nice to meet you!"
+profile_pic = ""
 
 [footer]
 # Your GitHub profile link (leave string empty for no link)
