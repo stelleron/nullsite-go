@@ -22,30 +22,7 @@ const (
 	ProjectPost
 )
 
-// Global variables
-var blog_name string
-var footer string
-
-// Constants
-const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
-const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
-const HtmlTemplate = `<!DOCTYPE html>
-<head>
-    <title> %s </title>
-</head>
-<body>
-<div id="header">
-<h1>%s</h1>
-</div>
-<div id="content">
-%s
-</div>
-<div id="footer">
-%s
-</div>
-</body>
-`
-
+// Structs
 type FooterData struct {
 	Github   string
 	Linkedin string
@@ -73,6 +50,36 @@ type Frontmatter struct {
 	Date        string
 	Description string
 }
+
+// Global variables
+var blog_name string
+var footer string
+var blogposts_data []Frontmatter
+
+// Constants
+const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
+const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
+const HtmlTemplate = `<!DOCTYPE html>
+<head>
+    <title> %s </title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
+</head>
+<body>
+<div id="header">
+<h1>%s</h1>
+</div>
+<div id="content">
+%s
+</div>
+<div id="footer">
+%s
+</div>
+<script>
+  hljs.initHighlightingOnLoad();
+</script>
+</body>
+`
 
 func process_md_file(md_file MarkdownFile) (string, Frontmatter) {
 	// First find the frontmatter data
