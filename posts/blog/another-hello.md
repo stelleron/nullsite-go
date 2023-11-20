@@ -1,6 +1,6 @@
 ===
 title: Another Hello World!
-date: 23-01-2021
+date: 01-23-2021
 description: My second ever post 
 ===
 # Hello World!

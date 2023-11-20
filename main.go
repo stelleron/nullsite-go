@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/gomarkdown/markdown"
 	"github.com/gomarkdown/markdown/html"
@@ -46,17 +49,28 @@ type ProjectFolder struct {
 }
 
 type Frontmatter struct {
+	FileName    string
 	Title       string
 	Date        string
 	Description string
+	SortDate    time.Time
 }
+
+type FrontmatterList []Frontmatter
+
+func (f FrontmatterList) Len() int           { return len(f) }
+func (f FrontmatterList) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
+func (f FrontmatterList) Less(i, j int) bool { return f[i].SortDate.After(f[j].SortDate) }
 
 // Global variables
 var blog_name string
 var footer string
-var blogposts_data []Frontmatter
+var blogposts_data FrontmatterList
 
 // Constants
+const SiteBasePath = "site/"
+const SiteBlogPath = "site/blog/"
+const BlogPathForLinks = "/site/blog/"
 const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const HtmlTemplate = `<!DOCTYPE html>
@@ -80,6 +94,10 @@ const HtmlTemplate = `<!DOCTYPE html>
 </script>
 </body>
 `
+const HtmlBlogpostTemplate = `<a href="%s" class="index-post-title">%s</a>
+<div class="index-post-date">%s</div>
+<p class="index-post-desc">%s</p>
+`
 
 func process_md_file(md_file MarkdownFile) (string, Frontmatter) {
 	// First find the frontmatter data
@@ -92,9 +110,16 @@ func process_md_file(md_file MarkdownFile) (string, Frontmatter) {
 	description_loc := strings.Index(frontmatter_data, "description")
 
 	frontmatter_obj := Frontmatter{
+		FileName:    md_file.FileName,
 		Title:       frontmatter_data[title_loc+len("title:")+1 : date_loc],
 		Date:        frontmatter_data[date_loc+len("date:")+1 : description_loc],
 		Description: frontmatter_data[description_loc+len("description:"):],
+	}
+
+	var err error
+	frontmatter_obj.SortDate, err = time.Parse("01-02-2006", frontmatter_obj.Date)
+	if err != nil {
+		fmt.Println("Error parsing date:", err)
 	}
 
 	end_ptr := strings.Index(strings.Replace(md_file.FileText, "===", "xxx", 1), "===")
@@ -164,6 +189,10 @@ func md_to_html(md_file MarkdownFile, p_type PostType) string {
 	opts := html.RendererOptions{Flags: htmlFlags}
 	renderer := html.NewRenderer(opts)
 
+	if p_type == BlogPost {
+		blogposts_data = append(blogposts_data, md_frontmatter)
+	}
+
 	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, blog_name, markdown.Render(doc, renderer), footer)
 }
 
@@ -177,6 +206,23 @@ func publish_folder(p_folder ProjectFolder) {
 		}
 	}
 
+}
+
+func generate_blog_homepage() {
+	sort.Sort(blogposts_data)
+	html_data := ""
+	for x, blogpost := range blogposts_data {
+		blogpost_html := fmt.Sprintf(HtmlBlogpostTemplate, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description)
+		if x < len(blogposts_data)-1 {
+			blogpost_html += "<hr>"
+		}
+		html_data += blogpost_html
+	}
+	err := os.WriteFile("site/blog.html", []byte(fmt.Sprintf(HtmlTemplate, "My Homepage", blog_name, html_data, footer)), 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+		return
+	}
 }
 
 func main() {
@@ -206,11 +252,12 @@ func main() {
 	// Then iterate through and convert the posts to HTML
 	// == First convert the about and resume pages
 	{
-		special_pages := load_blog_pages("posts/special/", "site/", SpecialPost)
+		special_pages := load_blog_pages("posts/special/", SiteBasePath, SpecialPost)
 		publish_folder(special_pages)
 	}
 	{
-		blogpost_pages := load_blog_pages("posts/blog", "site/blog", BlogPost)
+		blogpost_pages := load_blog_pages("posts/blog", SiteBlogPath, BlogPost)
 		publish_folder(blogpost_pages)
+		generate_blog_homepage()
 	}
 }

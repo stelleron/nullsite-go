@@ -1,6 +1,6 @@
 ===
 title: Hello World!
-date: 17-01-2021
+date: 01-17-2021
 description: My first ever post 
 ===
 # Hello World!
