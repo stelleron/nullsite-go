@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
 
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
 	"github.com/pelletier/go-toml/v2"
 )
 
@@ -15,6 +20,14 @@ var resume_path string
 
 const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
+const HtmlTemplate = `<!DOCTYPE html>
+<head>
+    <title> %s </title>
+</head>
+<body>
+%s
+</body>
+`
 
 type FooterData struct {
 	Github   string
@@ -23,9 +36,45 @@ type FooterData struct {
 
 type SiteConfig struct {
 	Name   string
-	About  string
-	Resume string
 	Footer FooterData
+}
+
+type MarkdownFile struct {
+	FileName string
+	FileText string
+}
+
+type ProjectFolder struct {
+	SourceDir      string
+	DestinationDir string
+	MarkdownFiles  []MarkdownFile
+}
+
+type Frontmatter struct {
+	Title       string
+	Date        string
+	Description string
+}
+
+func process_md_file(md_file MarkdownFile) (string, Frontmatter) {
+	// First find the frontmatter data
+	md_data := strings.Replace(md_file.FileText, "\n", "", -1)
+	frontmatter_data := regexp.MustCompile(`===(.*)===`).FindStringSubmatch(md_data)[1]
+
+	// Then parse it
+	title_loc := strings.Index(frontmatter_data, "title")
+	date_loc := strings.Index(frontmatter_data, "date")
+	description_loc := strings.Index(frontmatter_data, "description")
+
+	frontmatter_obj := Frontmatter{
+		Title:       frontmatter_data[title_loc+len("title:")+1 : date_loc],
+		Date:        frontmatter_data[date_loc+len("date:")+1 : description_loc],
+		Description: frontmatter_data[description_loc+len("description:"):],
+	}
+
+	end_ptr := strings.Index(strings.Replace(md_file.FileText, "===", "xxx", 1), "===")
+
+	return md_file.FileText[end_ptr+len("==="):], frontmatter_obj
 }
 
 func generate_footer(cfg SiteConfig) {
@@ -41,7 +90,66 @@ func generate_footer(cfg SiteConfig) {
 	}
 }
 
-func generate_special_pages(cfg SiteConfig) {
+func load_blog_pages(source_dir string, dest_dir string) ProjectFolder {
+	var project_folder ProjectFolder
+
+	dir, err := os.Open(source_dir)
+	if err != nil {
+		fmt.Println("Error opening directory:", err)
+	}
+	defer dir.Close()
+
+	fileInfos, err := dir.Readdir(0)
+	if err != nil {
+		fmt.Println("Error reading directory:", err)
+	}
+
+	for _, fileInfo := range fileInfos {
+		// Check if it's a regular file
+		if fileInfo.Mode().IsRegular() {
+			filePath := filepath.Join(source_dir, fileInfo.Name())
+
+			// Read and print the file content
+			fileData, err := os.ReadFile(filePath)
+			if err != nil {
+				fmt.Println("Error reading file:", err)
+			}
+
+			project_folder.MarkdownFiles = append(project_folder.MarkdownFiles, MarkdownFile{strings.Replace(fileInfo.Name(), "md", "html", -1), string(fileData)})
+		}
+	}
+
+	project_folder.SourceDir = source_dir
+	project_folder.DestinationDir = dest_dir
+
+	return project_folder
+}
+
+func md_to_html(md_file MarkdownFile, blog_name string) string {
+	md_str, md_frontmatter := process_md_file(md_file)
+
+	// create markdown parser with extensions
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	p := parser.NewWithExtensions(extensions)
+	doc := p.Parse([]byte(md_str))
+
+	// create HTML renderer with extensions
+	htmlFlags := html.CommonFlags | html.HrefTargetBlank
+	opts := html.RendererOptions{Flags: htmlFlags}
+	renderer := html.NewRenderer(opts)
+
+	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, markdown.Render(doc, renderer))
+}
+
+func publish_folder(p_folder ProjectFolder, blog_name string) {
+	for _, fileData := range p_folder.MarkdownFiles {
+		html_file := md_to_html(fileData, blog_name)
+		err := os.WriteFile(filepath.Join(p_folder.DestinationDir, fileData.FileName), []byte(html_file), 0644)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
+			return
+		}
+	}
 
 }
 
@@ -64,30 +172,11 @@ func main() {
 
 	// Generate a footer
 	generate_footer(cfg)
-	fmt.Println(footer)
 
-	// Then iterate through and convert the posts into HTML
-	dir, err := os.Open("posts")
-	if err != nil {
-		fmt.Println("Error opening directory:", err)
-		return
+	// Then iterate through and convert the posts to HTML
+	// == First convert the about and resume pages
+	{
+		special_pages := load_blog_pages("posts/special/", "site/")
+		publish_folder(special_pages, blog_name)
 	}
-	defer dir.Close()
-
-	fileInfos, err := dir.Readdir(0)
-	if err != nil {
-		fmt.Println("Error reading directory:", err)
-		return
-	}
-
-	var md_files []fs.FileInfo
-
-	for _, fileInfo := range fileInfos {
-		if !fileInfo.IsDir() {
-			md_files = append(md_files, fileInfo)
-		}
-	}
-
-	fmt.Println("Converting special pages...")
-	generate_special_pages(cfg)
 }
