@@ -15,8 +15,6 @@ import (
 
 var blog_name string
 var footer string
-var about_path string
-var resume_path string
 
 const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
@@ -25,7 +23,12 @@ const HtmlTemplate = `<!DOCTYPE html>
     <title> %s </title>
 </head>
 <body>
+<div>
 %s
+</div>
+<div>
+%s
+</div>
 </body>
 `
 
@@ -138,7 +141,7 @@ func md_to_html(md_file MarkdownFile, blog_name string) string {
 	opts := html.RendererOptions{Flags: htmlFlags}
 	renderer := html.NewRenderer(opts)
 
-	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, markdown.Render(doc, renderer))
+	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, markdown.Render(doc, renderer), footer)
 }
 
 func publish_folder(p_folder ProjectFolder, blog_name string) {
@@ -166,6 +169,10 @@ func main() {
 	// Load the config.toml
 	var cfg SiteConfig
 	err = toml.Unmarshal([]byte(config_txt), &cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error processing config: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Get the blog name
 	blog_name = fmt.Sprintf("%s's Blog", cfg.Name)
