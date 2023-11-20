@@ -13,9 +13,20 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
+// Post type enum
+type PostType int
+
+const (
+	SpecialPost PostType = iota
+	BlogPost
+	ProjectPost
+)
+
+// Global variables
 var blog_name string
 var footer string
 
+// Constants
 const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const HtmlTemplate = `<!DOCTYPE html>
@@ -23,10 +34,13 @@ const HtmlTemplate = `<!DOCTYPE html>
     <title> %s </title>
 </head>
 <body>
-<div>
+<div id="header">
+<h1>%s</h1>
+</div>
+<div id="content">
 %s
 </div>
-<div>
+<div id="footer">
 %s
 </div>
 </body>
@@ -50,6 +64,7 @@ type MarkdownFile struct {
 type ProjectFolder struct {
 	SourceDir      string
 	DestinationDir string
+	ProjectType    PostType
 	MarkdownFiles  []MarkdownFile
 }
 
@@ -93,7 +108,7 @@ func generate_footer(cfg SiteConfig) {
 	}
 }
 
-func load_blog_pages(source_dir string, dest_dir string) ProjectFolder {
+func load_blog_pages(source_dir string, dest_dir string, post_type PostType) ProjectFolder {
 	var project_folder ProjectFolder
 
 	dir, err := os.Open(source_dir)
@@ -124,11 +139,12 @@ func load_blog_pages(source_dir string, dest_dir string) ProjectFolder {
 
 	project_folder.SourceDir = source_dir
 	project_folder.DestinationDir = dest_dir
+	project_folder.ProjectType = post_type
 
 	return project_folder
 }
 
-func md_to_html(md_file MarkdownFile, blog_name string) string {
+func md_to_html(md_file MarkdownFile, p_type PostType) string {
 	md_str, md_frontmatter := process_md_file(md_file)
 
 	// create markdown parser with extensions
@@ -141,12 +157,12 @@ func md_to_html(md_file MarkdownFile, blog_name string) string {
 	opts := html.RendererOptions{Flags: htmlFlags}
 	renderer := html.NewRenderer(opts)
 
-	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, markdown.Render(doc, renderer), footer)
+	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, blog_name, markdown.Render(doc, renderer), footer)
 }
 
-func publish_folder(p_folder ProjectFolder, blog_name string) {
+func publish_folder(p_folder ProjectFolder) {
 	for _, fileData := range p_folder.MarkdownFiles {
-		html_file := md_to_html(fileData, blog_name)
+		html_file := md_to_html(fileData, p_folder.ProjectType)
 		err := os.WriteFile(filepath.Join(p_folder.DestinationDir, fileData.FileName), []byte(html_file), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
@@ -183,7 +199,11 @@ func main() {
 	// Then iterate through and convert the posts to HTML
 	// == First convert the about and resume pages
 	{
-		special_pages := load_blog_pages("posts/special/", "site/")
-		publish_folder(special_pages, blog_name)
+		special_pages := load_blog_pages("posts/special/", "site/", SpecialPost)
+		publish_folder(special_pages)
+	}
+	{
+		blogpost_pages := load_blog_pages("posts/blog", "site/blog", BlogPost)
+		publish_folder(blogpost_pages)
 	}
 }
