@@ -23,6 +23,8 @@ const (
 	SpecialPost PostType = iota
 	BlogPost
 	ProjectPost
+	HomepagePost
+	BlogHomePost
 )
 
 // Structs
@@ -67,6 +69,7 @@ func (f FrontmatterList) Less(i, j int) bool { return f[i].SortDate.After(f[j].S
 
 // Global variables
 var blog_name string
+var pfp_path string
 var footer string
 var blogposts_data FrontmatterList
 var projects_data FrontmatterList
@@ -82,21 +85,22 @@ const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg
 const HtmlTemplate = `<!DOCTYPE html>
 <head>
     <title> %s </title>
+	<link rel="stylesheet" href="/style/style.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet"> 
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
 </head>
 <body>
-	<div id="header">
-		<h1>%s</h1>
-	</div>
-	<div id="content">
+	<div class="sidebar">
 		%s
 	</div>
-	<div id="footer">
+	<div class="content">
 		%s
 	</div>
 	<script>
-		hljs.initHighlightingOnLoad();
+		hljs.highlightAll();
 	</script>
 </body>
 `
@@ -104,6 +108,19 @@ const HtmlBlogpostTemplate = `<a href="%s" class="index-post-title">%s</a>
 <div class="index-post-date">%s</div>
 <p class="index-post-desc">%s</p>
 `
+
+func assemble_sidebar() string {
+	sidebar := ""
+	// Profile pic
+	sidebar += fmt.Sprintf("<img class=\"profile-pic\" src=\" %s \">", pfp_path)
+	// Poster's name
+	sidebar += fmt.Sprintf("<h1> %s </h1>", blog_name)
+	return sidebar
+}
+
+func assemble_webpage(page_title string, content string) string {
+	return fmt.Sprintf(HtmlTemplate, page_title, assemble_sidebar(), content)
+}
 
 func process_md_file(md_file MarkdownFile) (string, Frontmatter) {
 	// First find the frontmatter data
@@ -201,7 +218,7 @@ func md_to_html(md_file MarkdownFile, p_type PostType) string {
 		projects_data = append(projects_data, md_frontmatter)
 	}
 
-	return fmt.Sprintf(HtmlTemplate, md_frontmatter.Title, blog_name, markdown.Render(doc, renderer), footer)
+	return assemble_webpage(blog_name+" · "+md_frontmatter.Title, string(markdown.Render(doc, renderer)))
 }
 
 func publish_folder(p_folder ProjectFolder) {
@@ -226,7 +243,7 @@ func generate_blog_homepage() {
 		}
 		html_data += blogpost_html
 	}
-	err := os.WriteFile("site/blog.html", []byte(fmt.Sprintf(HtmlTemplate, "My Homepage", blog_name, html_data, footer)), 0644)
+	err := os.WriteFile("site/blog.html", []byte(assemble_webpage(blog_name+" · Blog", html_data)), 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
 		return
@@ -243,7 +260,7 @@ func generate_projects_homepage() {
 		}
 		html_data += blogpost_html
 	}
-	err := os.WriteFile("index.html", []byte(fmt.Sprintf(HtmlTemplate, "My Homepage", blog_name, html_data, footer)), 0644)
+	err := os.WriteFile("index.html", []byte(assemble_webpage(blog_name+" · Homepage", html_data)), 0644)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing to file: %v\n", err)
 		return
@@ -269,7 +286,8 @@ func main() {
 	}
 
 	// Get the blog name
-	blog_name = fmt.Sprintf("%s's Blog", cfg.Name)
+	blog_name = cfg.Name
+	pfp_path = cfg.ProfilePic
 
 	// Generate a footer
 	generate_footer(cfg)

@@ -2,7 +2,7 @@
 name = "Shreyas Donti"
 username = "stelleron"
 description = "I'm a CS student @ UMass Amherst! Nice to meet you!"
-profile_pic = ""
+profilepic = "/images/base/pfp.png"
 
 [footer]
 # Your GitHub profile link (leave string empty for no link)
