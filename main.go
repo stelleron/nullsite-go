@@ -36,6 +36,7 @@ type FooterData struct {
 type SiteConfig struct {
 	Name        string
 	Username    string
+	Pronouns    string
 	Description string
 	ProfilePic  string
 	Footer      FooterData
@@ -70,6 +71,9 @@ func (f FrontmatterList) Less(i, j int) bool { return f[i].SortDate.After(f[j].S
 // Global variables
 var blog_name string
 var pfp_path string
+var username string
+var pronouns string
+var description string
 var footer string
 var blogposts_data FrontmatterList
 var projects_data FrontmatterList
@@ -114,7 +118,20 @@ func assemble_sidebar() string {
 	// Profile pic
 	sidebar += fmt.Sprintf("<img class=\"profile-pic\" src=\" %s \">", pfp_path)
 	// Poster's name
-	sidebar += fmt.Sprintf("<h1> %s </h1>", blog_name)
+	sidebar += fmt.Sprintf("<h1 class=\"name\"> %s </h1>", blog_name)
+	// Poster's username and pronouns
+	sidebar += fmt.Sprintf("<span class=\"username\"> %s </span>", username)
+	sidebar += "<span class=\"username\"> · </span>"
+	sidebar += fmt.Sprintf("<span class=\"pronouns\"> %s </span>", pronouns)
+	// Poster's description
+	sidebar += fmt.Sprintf("<p class=\"description\"> %s </p>", description)
+	// Links to other parts of the page
+	sidebar += "<p class=\"sidebar-link-cont\"><a href=\"/\" class=\"sidebar-links\">Home</a></p>"
+	sidebar += "<p class=\"sidebar-link-cont\"><a href=\"/site/about.html\" class=\"sidebar-links\">About</a></p>"
+	sidebar += "<p class=\"sidebar-link-cont\"><a href=\"/site/resume.html\" class=\"sidebar-links\">Resume</a></p>"
+	sidebar += "<p class=\"sidebar-link-cont\"><a href=\"/site/blog.html\" class=\"sidebar-links\">Blog</a></p>"
+	// Add links
+	sidebar += footer
 	return sidebar
 }
 
@@ -161,6 +178,8 @@ func generate_footer(cfg SiteConfig) {
 		linkedin_logo := LinkedInFooter
 		footer += fmt.Sprintf(linkedin_logo, cfg.Footer.Linkedin)
 	}
+
+	footer = fmt.Sprintf("<div class=\"footer\">%s</div>", footer)
 }
 
 func load_blog_pages(source_dir string, dest_dir string, post_type PostType) ProjectFolder {
@@ -285,8 +304,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Get the blog name
+	// Get some config data
 	blog_name = cfg.Name
+	username = cfg.Username
+	pronouns = cfg.Pronouns
+	description = cfg.Description
 	pfp_path = cfg.ProfilePic
 
 	// Generate a footer
