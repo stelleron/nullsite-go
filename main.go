@@ -28,7 +28,7 @@ const (
 )
 
 // Structs
-type FooterData struct {
+type SidebarData struct {
 	Github   string
 	Linkedin string
 }
@@ -39,7 +39,7 @@ type SiteConfig struct {
 	Pronouns    string
 	Description string
 	ProfilePic  string
-	Footer      FooterData
+	Sidebar     SidebarData
 }
 
 type MarkdownFile struct {
@@ -74,7 +74,7 @@ var pfp_path string
 var username string
 var pronouns string
 var description string
-var footer string
+var links_sidebar string
 var blogposts_data FrontmatterList
 var projects_data FrontmatterList
 
@@ -84,8 +84,8 @@ const SiteBlogPath = "site/blog/"
 const BlogPathForLinks = "/site/blog/"
 const SiteProjectPath = "site/projects/"
 const ProjectPathForLinks = "/site/projects/"
-const GitHubFooter = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
-const LinkedInFooter = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
+const GitHubSidebar = "<a href=\"%s\"><img src=\"/images/base/github-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
+const LinkedInSidebar = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.svg\" class=\"icon\" width=\"32\" height=\"32\"></a>"
 const HtmlTemplate = `<!DOCTYPE html>
 <head>
     <title> %s </title>
@@ -131,7 +131,7 @@ func assemble_sidebar() string {
 	sidebar += "<p class=\"sidebar-link-cont\"><a href=\"/site/resume.html\" class=\"sidebar-links\">Resume</a></p>"
 	sidebar += "<p class=\"sidebar-link-cont\"><a href=\"/site/blog.html\" class=\"sidebar-links\">Blog</a></p>"
 	// Add links
-	sidebar += footer
+	sidebar += links_sidebar
 	return sidebar
 }
 
@@ -167,19 +167,19 @@ func process_md_file(md_file MarkdownFile) (string, Frontmatter) {
 	return md_file.FileText[end_ptr+len("==="):], frontmatter_obj
 }
 
-func generate_footer(cfg SiteConfig) {
+func generate_sidebar(cfg SiteConfig) {
 	// Look for a GitHub and LinkedIn link
-	if cfg.Footer.Github != "" {
-		github_logo := GitHubFooter
-		footer += fmt.Sprintf(github_logo, cfg.Footer.Github)
-		footer += "\n"
+	if cfg.Sidebar.Github != "" {
+		github_logo := GitHubSidebar
+		links_sidebar += fmt.Sprintf(github_logo, cfg.Sidebar.Github)
+		links_sidebar += "\n"
 	}
-	if cfg.Footer.Linkedin != "" {
-		linkedin_logo := LinkedInFooter
-		footer += fmt.Sprintf(linkedin_logo, cfg.Footer.Linkedin)
+	if cfg.Sidebar.Linkedin != "" {
+		linkedin_logo := LinkedInSidebar
+		links_sidebar += fmt.Sprintf(linkedin_logo, cfg.Sidebar.Linkedin)
 	}
 
-	footer = fmt.Sprintf("<div class=\"footer\">%s</div>", footer)
+	links_sidebar = fmt.Sprintf("<div class=\"footer\">%s</div>", links_sidebar)
 }
 
 func load_blog_pages(source_dir string, dest_dir string, post_type PostType) ProjectFolder {
@@ -311,8 +311,8 @@ func main() {
 	description = cfg.Description
 	pfp_path = cfg.ProfilePic
 
-	// Generate a footer
-	generate_footer(cfg)
+	// Generate a sidebar of links
+	generate_sidebar(cfg)
 
 	// Then iterate through and convert the posts to HTML
 	// == First convert the about and resume pages
