@@ -51,6 +51,10 @@ body {
     margin-right: 4rem;
   }
 }
+.content img {
+  max-width: 100%;
+}
+
 .profile-pic {
   width: 75px;
   height: 75px;
