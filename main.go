@@ -108,9 +108,12 @@ const HtmlTemplate = `<!DOCTYPE html>
 	</script>
 </body>
 `
-const HtmlBlogpostTemplate = `<a href="%s" class="index-post-title">%s</a>
+const HtmlBlogpostTemplate = `<div class="index-post">
+<a href="%s" class="index-post-title">%s</a>
 <div class="index-post-date">%s</div>
 <p class="index-post-desc">%s</p>
+%s
+</div>
 `
 
 func assemble_sidebar() string {
@@ -256,9 +259,11 @@ func generate_blog_homepage() {
 	sort.Sort(blogposts_data)
 	html_data := ""
 	for x, blogpost := range blogposts_data {
-		blogpost_html := fmt.Sprintf(HtmlBlogpostTemplate, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description)
+		var blogpost_html string
 		if x < len(blogposts_data)-1 {
-			blogpost_html += "<hr>"
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description, "<hr>")
+		} else {
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description, "")
 		}
 		html_data += blogpost_html
 	}
@@ -273,9 +278,11 @@ func generate_projects_homepage() {
 	sort.Sort(projects_data)
 	html_data := ""
 	for x, project := range projects_data {
-		blogpost_html := fmt.Sprintf(HtmlBlogpostTemplate, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description)
-		if x < len(projects_data)-1 {
-			blogpost_html += "<hr>"
+		var blogpost_html string
+		if x < len(blogposts_data)-1 {
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "<hr>")
+		} else {
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "")
 		}
 		html_data += blogpost_html
 	}
