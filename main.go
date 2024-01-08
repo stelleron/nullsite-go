@@ -285,7 +285,7 @@ func generate_projects_homepage() {
 	anim_delay := 0.0
 	for x, project := range projects_data {
 		var blogpost_html string
-		if x < len(blogposts_data)-1 {
+		if x < len(projects_data)-1 {
 			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, anim_delay, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "<hr>")
 		} else {
 			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, anim_delay, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "")
