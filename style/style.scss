@@ -123,6 +123,7 @@ body {
 
 .index-post-desc {
   font-size: 16px;
+  color: black;
 }
 
 .footer {
@@ -134,27 +135,10 @@ body {
   margin-right: 0.5em;
 }
 
-@keyframes fadeinout {
-  0% {
-    opacity: 0;
-  }
-  1.85% {                      /* = fadingin / duration * 100% */
-    opacity: 1;
-  }
-  4.63% {                     /* = (fadingin + showing) / duration * 100% */
-    opacity: 1;
-  }
-  6.48% {                     /* = (fadingin + showing + fadingout) / duration * 100% */
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
 .index-post {
   opacity: 0;
-  animation-name: fadeinout;
-  animation-duration: 108s;     /* = (fadingin + showing + fadingout) * numquotes */
-  animation-iteration-count: infinite; 
+  animation: fadeInUp;
+  animation-duration: 1.2s;     /* = (fadingin + showing + fadingout) * numquotes */
+  animation-fill-mode: forwards;
+  margin-top: 1.5em;
 }

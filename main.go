@@ -79,6 +79,7 @@ var blogposts_data FrontmatterList
 var projects_data FrontmatterList
 
 // Constants
+const AnimDelayIncrement = 0.15
 const SiteBasePath = "site/"
 const SiteBlogPath = "site/blog/"
 const BlogPathForLinks = "/site/blog/"
@@ -89,6 +90,7 @@ const LinkedInSidebar = "<a href=\"%s\"><img src=\"/images/base/linkedin-mark.sv
 const HtmlTemplate = `<!DOCTYPE html>
 <head>
     <title> %s </title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 	<link rel="stylesheet" href="/style/style.css">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/styles/default.min.css">
 	<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -108,7 +110,8 @@ const HtmlTemplate = `<!DOCTYPE html>
 	</script>
 </body>
 `
-const HtmlBlogpostTemplate = `<div class="index-post">
+const HtmlBlogpostTemplate = `
+<div class="index-post" style="animation-delay: %fs">
 <a href="%s" class="index-post-title">%s</a>
 <div class="index-post-date">%s</div>
 <p class="index-post-desc">%s</p>
@@ -258,14 +261,16 @@ func publish_folder(p_folder ProjectFolder) {
 func generate_blog_homepage() {
 	sort.Sort(blogposts_data)
 	html_data := ""
+	anim_delay := 0.0
 	for x, blogpost := range blogposts_data {
 		var blogpost_html string
 		if x < len(blogposts_data)-1 {
-			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description, "<hr>")
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, anim_delay, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description, "<hr>")
 		} else {
-			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description, "")
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, anim_delay, path.Join(BlogPathForLinks, blogpost.FileName), blogpost.Title, blogpost.Date, blogpost.Description, "")
 		}
 		html_data += blogpost_html
+		anim_delay += AnimDelayIncrement
 	}
 	err := os.WriteFile("site/blog.html", []byte(assemble_webpage(blog_name+" · Blog", html_data)), 0644)
 	if err != nil {
@@ -277,14 +282,16 @@ func generate_blog_homepage() {
 func generate_projects_homepage() {
 	sort.Sort(projects_data)
 	html_data := ""
+	anim_delay := 0.0
 	for x, project := range projects_data {
 		var blogpost_html string
 		if x < len(blogposts_data)-1 {
-			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "<hr>")
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, anim_delay, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "<hr>")
 		} else {
-			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "")
+			blogpost_html = fmt.Sprintf(HtmlBlogpostTemplate, anim_delay, path.Join(ProjectPathForLinks, project.FileName), project.Title, project.Date, project.Description, "")
 		}
 		html_data += blogpost_html
+		anim_delay += AnimDelayIncrement
 	}
 	err := os.WriteFile("index.html", []byte(assemble_webpage(blog_name+" · Homepage", html_data)), 0644)
 	if err != nil {
@@ -328,12 +335,12 @@ func main() {
 		publish_folder(special_pages)
 	}
 	{
-		blogpost_pages := load_blog_pages("posts/blog", SiteBlogPath, BlogPost)
+		blogpost_pages := load_blog_pages("posts/blog/", SiteBlogPath, BlogPost)
 		publish_folder(blogpost_pages)
 		generate_blog_homepage()
 	}
 	{
-		projects_pages := load_blog_pages("posts/projects", SiteProjectPath, ProjectPost)
+		projects_pages := load_blog_pages("posts/projects/", SiteProjectPath, ProjectPost)
 		publish_folder(projects_pages)
 		generate_projects_homepage()
 	}
