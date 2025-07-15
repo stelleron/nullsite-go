@@ -1,6 +1,7 @@
 === 
-title: Second Project
-date: 11-21-2023
-description: Another project coded for no particular reason whatsoever
-=== 
-Programmed in potato code, this project does nothing
+title: Untitled Project
+date: 08-13-2022
+description: Another project that has been made.
+link: /
+project-image: None
+===
